@@ -1,0 +1,1223 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "Олеся Сидоренко\n",
+    "\n",
+    "Полина Тимлева\n",
+    "\n",
+    "Мария Ломовцева\n",
+    "\n",
+    "Татьяна Крук\n",
+    "\n",
+    "Алина Кобец"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 88,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import numpy as np\n",
+    "import pandas as pd\n",
+    "import matplotlib.pyplot as plt \n",
+    "import sys\n",
+    "import pickle"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 89,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ratings=pd.read_csv(\"ratings.csv\") \n",
+    "movies=pd.read_csv(\"movies.csv\") \n",
+    "tags=pd.read_csv(\"tags.csv\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 90,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>userId</th>\n",
+       "      <th>movieId</th>\n",
+       "      <th>rating</th>\n",
+       "      <th>timestamp</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>4.0</td>\n",
+       "      <td>964982703</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>1</td>\n",
+       "      <td>3</td>\n",
+       "      <td>4.0</td>\n",
+       "      <td>964981247</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>1</td>\n",
+       "      <td>6</td>\n",
+       "      <td>4.0</td>\n",
+       "      <td>964982224</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>1</td>\n",
+       "      <td>47</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>964983815</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>1</td>\n",
+       "      <td>50</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>964982931</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   userId  movieId  rating  timestamp\n",
+       "0       1        1     4.0  964982703\n",
+       "1       1        3     4.0  964981247\n",
+       "2       1        6     4.0  964982224\n",
+       "3       1       47     5.0  964983815\n",
+       "4       1       50     5.0  964982931"
+      ]
+     },
+     "execution_count": 90,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "ratings.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 91,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "movies.tail()\n",
+    "movies['genres'] = movies['genres'].str.replace('|',' ')"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 92,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "9742"
+      ]
+     },
+     "execution_count": 92,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "len(movies.movieId.unique())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 93,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "9724"
+      ]
+     },
+     "execution_count": 93,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "len(ratings.movieId.unique())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 94,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#только юзеры, оценившие больше, чем 55 фильмов\n",
+    "\n",
+    "ratings_f = ratings.groupby('userId').filter(lambda x: len(x) >= 55)\n",
+    "\n",
+    "movie_list_rating = ratings_f.movieId.unique().tolist()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 95,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "98.7990145760624"
+      ]
+     },
+     "execution_count": 95,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# 99% сохранились\n",
+    "len(ratings_f.movieId.unique())/len(movies.movieId.unique()) * 100"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 96,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "59.67213114754099"
+      ]
+     },
+     "execution_count": 96,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# из них 59% юзеров  \n",
+    "len(ratings_f.userId.unique())/len(ratings.userId.unique()) * 100"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 97,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#отфильтруем фильмы\n",
+    "movies = movies[movies.movieId.isin(movie_list_rating)]"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 98,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>movieId</th>\n",
+       "      <th>title</th>\n",
+       "      <th>genres</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>1</td>\n",
+       "      <td>Toy Story (1995)</td>\n",
+       "      <td>Adventure Animation Children Comedy Fantasy</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>2</td>\n",
+       "      <td>Jumanji (1995)</td>\n",
+       "      <td>Adventure Children Fantasy</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>3</td>\n",
+       "      <td>Grumpier Old Men (1995)</td>\n",
+       "      <td>Comedy Romance</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   movieId                    title  \\\n",
+       "0        1         Toy Story (1995)   \n",
+       "1        2           Jumanji (1995)   \n",
+       "2        3  Grumpier Old Men (1995)   \n",
+       "\n",
+       "                                        genres  \n",
+       "0  Adventure Animation Children Comedy Fantasy  \n",
+       "1                   Adventure Children Fantasy  \n",
+       "2                               Comedy Romance  "
+      ]
+     },
+     "execution_count": 98,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "movies.head(3)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 99,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "Mapping_file = dict(zip(movies.title.tolist(), movies.movieId.tolist()))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 100,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "C:\\Users\\Dell\\Anaconda3\\lib\\site-packages\\pandas\\core\\frame.py:3940: SettingWithCopyWarning: \n",
+      "A value is trying to be set on a copy of a slice from a DataFrame\n",
+      "\n",
+      "See the caveats in the documentation: http://pandas.pydata.org/pandas-docs/stable/indexing.html#indexing-view-versus-copy\n",
+      "  errors=errors)\n"
+     ]
+    }
+   ],
+   "source": [
+    "tags.drop(['timestamp'],1, inplace=True)\n",
+    "ratings_f.drop(['timestamp'],1, inplace=True)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 101,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>movieId</th>\n",
+       "      <th>title</th>\n",
+       "      <th>genres</th>\n",
+       "      <th>userId</th>\n",
+       "      <th>tag</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>1</td>\n",
+       "      <td>Toy Story (1995)</td>\n",
+       "      <td>Adventure Animation Children Comedy Fantasy</td>\n",
+       "      <td>336.0</td>\n",
+       "      <td>pixar</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>1</td>\n",
+       "      <td>Toy Story (1995)</td>\n",
+       "      <td>Adventure Animation Children Comedy Fantasy</td>\n",
+       "      <td>474.0</td>\n",
+       "      <td>pixar</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>1</td>\n",
+       "      <td>Toy Story (1995)</td>\n",
+       "      <td>Adventure Animation Children Comedy Fantasy</td>\n",
+       "      <td>567.0</td>\n",
+       "      <td>fun</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   movieId             title                                       genres  \\\n",
+       "0        1  Toy Story (1995)  Adventure Animation Children Comedy Fantasy   \n",
+       "1        1  Toy Story (1995)  Adventure Animation Children Comedy Fantasy   \n",
+       "2        1  Toy Story (1995)  Adventure Animation Children Comedy Fantasy   \n",
+       "\n",
+       "   userId    tag  \n",
+       "0   336.0  pixar  \n",
+       "1   474.0  pixar  \n",
+       "2   567.0    fun  "
+      ]
+     },
+     "execution_count": 101,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "# объединяем данные по юзерам и фильмам\n",
+    "mixed = pd.merge(movies, tags, on='movieId', how='left')\n",
+    "mixed.head(3)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 102,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>movieId</th>\n",
+       "      <th>title</th>\n",
+       "      <th>metadata</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>1</td>\n",
+       "      <td>Toy Story (1995)</td>\n",
+       "      <td>pixar pixar fun Adventure Animation Children C...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>2</td>\n",
+       "      <td>Jumanji (1995)</td>\n",
+       "      <td>fantasy magic board game Robin Williams game A...</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>3</td>\n",
+       "      <td>Grumpier Old Men (1995)</td>\n",
+       "      <td>moldy old Comedy Romance</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   movieId                    title  \\\n",
+       "0        1         Toy Story (1995)   \n",
+       "1        2           Jumanji (1995)   \n",
+       "2        3  Grumpier Old Men (1995)   \n",
+       "\n",
+       "                                            metadata  \n",
+       "0  pixar pixar fun Adventure Animation Children C...  \n",
+       "1  fantasy magic board game Robin Williams game A...  \n",
+       "2                           moldy old Comedy Romance  "
+      ]
+     },
+     "execution_count": 102,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "mixed.fillna(\"\", inplace=True)\n",
+    "mixed = pd.DataFrame(mixed.groupby('movieId')['tag'].apply(\n",
+    "                                          lambda x: \"%s\" % ' '.join(x)))\n",
+    "Final = pd.merge(movies, mixed, on='movieId', how='left')\n",
+    "Final ['metadata'] = Final[['tag', 'genres']].apply(\n",
+    "                                          lambda x: ' '.join(x), axis = 1)\n",
+    "Final[['movieId','title','metadata']].head(3)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 103,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "(9625, 1675)\n"
+     ]
+    }
+   ],
+   "source": [
+    "from sklearn.feature_extraction.text import TfidfVectorizer\n",
+    "tfidf = TfidfVectorizer(stop_words='english')\n",
+    "tfidf_matrix = tfidf.fit_transform(Final['metadata'])\n",
+    "tfidf_df = pd.DataFrame(tfidf_matrix.toarray(), index=Final.index.tolist())\n",
+    "print(tfidf_df.shape)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 104,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# используем SVD\n",
+    "from sklearn.decomposition import TruncatedSVD\n",
+    "svd = TruncatedSVD(n_components=200)\n",
+    "latent_matrix = svd.fit_transform(tfidf_df)\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 105,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "n = 200 \n",
+    "latent_matrix_1_df = pd.DataFrame(latent_matrix[:,0:n], index=Final.title.tolist())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 106,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>userId</th>\n",
+       "      <th>movieId</th>\n",
+       "      <th>rating</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>4.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>1</td>\n",
+       "      <td>3</td>\n",
+       "      <td>4.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>1</td>\n",
+       "      <td>6</td>\n",
+       "      <td>4.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>1</td>\n",
+       "      <td>47</td>\n",
+       "      <td>5.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>1</td>\n",
+       "      <td>50</td>\n",
+       "      <td>5.0</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   userId  movieId  rating\n",
+       "0       1        1     4.0\n",
+       "1       1        3     4.0\n",
+       "2       1        6     4.0\n",
+       "3       1       47     5.0\n",
+       "4       1       50     5.0"
+      ]
+     },
+     "execution_count": 106,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "ratings_f.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 107,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ratings_f1 = pd.merge(movies[['movieId']], ratings_f, on=\"movieId\", how=\"right\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 108,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "ratings_f2 = ratings_f1.pivot(index = 'movieId', columns ='userId', values = 'rating').fillna(0)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 109,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th>userId</th>\n",
+       "      <th>1</th>\n",
+       "      <th>4</th>\n",
+       "      <th>6</th>\n",
+       "      <th>7</th>\n",
+       "      <th>10</th>\n",
+       "      <th>11</th>\n",
+       "      <th>15</th>\n",
+       "      <th>16</th>\n",
+       "      <th>17</th>\n",
+       "      <th>18</th>\n",
+       "      <th>...</th>\n",
+       "      <th>600</th>\n",
+       "      <th>601</th>\n",
+       "      <th>602</th>\n",
+       "      <th>603</th>\n",
+       "      <th>604</th>\n",
+       "      <th>605</th>\n",
+       "      <th>606</th>\n",
+       "      <th>607</th>\n",
+       "      <th>608</th>\n",
+       "      <th>610</th>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>movieId</th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "      <th></th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>4.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>4.5</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>2.5</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>4.5</td>\n",
+       "      <td>3.5</td>\n",
+       "      <td>...</td>\n",
+       "      <td>2.5</td>\n",
+       "      <td>4.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>4.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>4.0</td>\n",
+       "      <td>2.5</td>\n",
+       "      <td>4.0</td>\n",
+       "      <td>2.5</td>\n",
+       "      <td>5.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>4.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>3.0</td>\n",
+       "      <td>...</td>\n",
+       "      <td>4.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>4.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>3.5</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>0.0</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>4.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>5.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>...</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>0.0</td>\n",
+       "      <td>2.0</td>\n",
+       "      <td>0.0</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "<p>3 rows × 364 columns</p>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "userId   1    4    6    7    10   11   15   16   17   18   ...  600  601  602  \\\n",
+       "movieId                                                    ...                  \n",
+       "1        4.0  0.0  0.0  4.5  0.0  0.0  2.5  0.0  4.5  3.5  ...  2.5  4.0  0.0   \n",
+       "2        0.0  0.0  4.0  0.0  0.0  0.0  0.0  0.0  0.0  3.0  ...  4.0  0.0  4.0   \n",
+       "3        4.0  0.0  5.0  0.0  0.0  0.0  0.0  0.0  0.0  0.0  ...  0.0  0.0  0.0   \n",
+       "\n",
+       "userId   603  604  605  606  607  608  610  \n",
+       "movieId                                     \n",
+       "1        4.0  3.0  4.0  2.5  4.0  2.5  5.0  \n",
+       "2        0.0  5.0  3.5  0.0  0.0  2.0  0.0  \n",
+       "3        0.0  0.0  0.0  0.0  0.0  2.0  0.0  \n",
+       "\n",
+       "[3 rows x 364 columns]"
+      ]
+     },
+     "execution_count": 109,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "ratings_f2.head(3)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 110,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "9625"
+      ]
+     },
+     "execution_count": 110,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "len(ratings_f.movieId.unique())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 111,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sklearn.decomposition import TruncatedSVD\n",
+    "svd = TruncatedSVD(n_components=200)\n",
+    "latent_matrix_2 = svd.fit_transform(ratings_f2)\n",
+    "latent_matrix_2_df = pd.DataFrame(\n",
+    "                             latent_matrix_2,\n",
+    "                             index=Final.title.tolist())"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 112,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>content</th>\n",
+       "      <th>collaborative</th>\n",
+       "      <th>hybrid</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>Freaks (1932)</th>\n",
+       "      <td>0.883891</td>\n",
+       "      <td>0.545451</td>\n",
+       "      <td>0.714671</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Circus, The (1928)</th>\n",
+       "      <td>0.835487</td>\n",
+       "      <td>0.445616</td>\n",
+       "      <td>0.640551</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Big Top Pee-Wee (1988)</th>\n",
+       "      <td>0.831622</td>\n",
+       "      <td>0.249068</td>\n",
+       "      <td>0.540345</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Lost Horizon (1937)</th>\n",
+       "      <td>0.240127</td>\n",
+       "      <td>0.267228</td>\n",
+       "      <td>0.253678</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Rain Man (1988)</th>\n",
+       "      <td>0.217887</td>\n",
+       "      <td>0.147115</td>\n",
+       "      <td>0.182501</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>They Drive by Night (1940)</th>\n",
+       "      <td>0.216969</td>\n",
+       "      <td>0.434501</td>\n",
+       "      <td>0.325735</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Steel Magnolias (1989)</th>\n",
+       "      <td>0.215019</td>\n",
+       "      <td>0.243603</td>\n",
+       "      <td>0.229311</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Johnny Belinda (1948)</th>\n",
+       "      <td>0.215008</td>\n",
+       "      <td>0.434501</td>\n",
+       "      <td>0.324754</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Whole Wide World, The (1996)</th>\n",
+       "      <td>0.214684</td>\n",
+       "      <td>0.324401</td>\n",
+       "      <td>0.269543</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>House of Sand and Fog (2003)</th>\n",
+       "      <td>0.212357</td>\n",
+       "      <td>0.298515</td>\n",
+       "      <td>0.255436</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Sling Blade (1996)</th>\n",
+       "      <td>0.212240</td>\n",
+       "      <td>0.083071</td>\n",
+       "      <td>0.147655</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "                               content  collaborative    hybrid\n",
+       "Freaks (1932)                 0.883891       0.545451  0.714671\n",
+       "Circus, The (1928)            0.835487       0.445616  0.640551\n",
+       "Big Top Pee-Wee (1988)        0.831622       0.249068  0.540345\n",
+       "Lost Horizon (1937)           0.240127       0.267228  0.253678\n",
+       "Rain Man (1988)               0.217887       0.147115  0.182501\n",
+       "They Drive by Night (1940)    0.216969       0.434501  0.325735\n",
+       "Steel Magnolias (1989)        0.215019       0.243603  0.229311\n",
+       "Johnny Belinda (1948)         0.215008       0.434501  0.324754\n",
+       "Whole Wide World, The (1996)  0.214684       0.324401  0.269543\n",
+       "House of Sand and Fog (2003)  0.212357       0.298515  0.255436\n",
+       "Sling Blade (1996)            0.212240       0.083071  0.147655"
+      ]
+     },
+     "execution_count": 112,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "from sklearn.metrics.pairwise import cosine_similarity\n",
+    "\n",
+    "a_1 = np.array(latent_matrix_1_df.loc['Strada, La (1954)']).reshape(1, -1)\n",
+    "a_2 = np.array(latent_matrix_2_df.loc['Strada, La (1954)']).reshape(1, -1)\n",
+    "\n",
+    "# схожесть фильмов\n",
+    "score_1 = cosine_similarity(latent_matrix_1_df, a_1).reshape(-1)\n",
+    "score_2 = cosine_similarity(latent_matrix_2_df, a_2).reshape(-1)\n",
+    "\n",
+    "# среднее \n",
+    "hybrid = ((score_1 + score_2)/2.0)\n",
+    "\n",
+    "# формируем дата фрейм \n",
+    "dictDf = {'content': score_1 , 'collaborative': score_2, 'hybrid': hybrid} \n",
+    "similar = pd.DataFrame(dictDf, index = latent_matrix_1_df.index )\n",
+    "\n",
+    "#сортируем в порядке: content, collaborative or hybrid\n",
+    "similar.sort_values('content', ascending=False, inplace=True)\n",
+    "\n",
+    "similar[1:].head(11)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 113,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from surprise import Dataset, Reader, SVD, accuracy\n",
+    "from surprise.model_selection import train_test_split"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 114,
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "MSE: 0.7352\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "0.7352182348777669"
+      ]
+     },
+     "execution_count": 114,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#берём по ratings\n",
+    "reader = Reader(rating_scale=(1, 5))\n",
+    "data = Dataset.load_from_df(ratings_f[['userId','movieId','rating']], reader)\n",
+    "\n",
+    "# в тренировочную 85%\n",
+    "trainset, testset = train_test_split(data, test_size=.15)\n",
+    "algorithm = SVD()\n",
+    "algorithm.fit(trainset)\n",
+    "predictions = algorithm.test(testset)\n",
+    "\n",
+    "# оцениваем точность через MSE \n",
+    "accuracy.mse(predictions)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 115,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "#по каждому юзеру\n",
+    "def pred_user_rating(ui):\n",
+    "    if ui in ratings_f.userId.unique():\n",
+    "        ui_list = ratings_f[ratings_f.userId == ui].movieId.tolist()\n",
+    "        d = {k: v for k,v in Mapping_file.items() if not v in ui_list}        \n",
+    "        predictedL = []\n",
+    "        for i, j in d.items():     \n",
+    "            predicted = algorithm.predict(ui, j)\n",
+    "            predictedL.append((i, predicted[3])) \n",
+    "        pdf = pd.DataFrame(predictedL, columns = ['movies', 'ratings'])\n",
+    "        pdf.sort_values('ratings', ascending=False, inplace=True)  \n",
+    "        pdf.set_index('movies', inplace=True)    \n",
+    "        return pdf.head(10)        \n",
+    "    else:\n",
+    "        print(\"User Id does not exist in the list!\")\n",
+    "        return None"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 116,
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>ratings</th>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>movies</th>\n",
+       "      <th></th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>Monty Python and the Holy Grail (1975)</th>\n",
+       "      <td>4.404031</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Bridge on the River Kwai, The (1957)</th>\n",
+       "      <td>4.247121</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Lawrence of Arabia (1962)</th>\n",
+       "      <td>4.239930</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Good, the Bad and the Ugly, The (Buono, il brutto, il cattivo, Il) (1966)</th>\n",
+       "      <td>4.231940</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Glory (1989)</th>\n",
+       "      <td>4.224970</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Godfather, The (1972)</th>\n",
+       "      <td>4.220405</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Rosemary's Baby (1968)</th>\n",
+       "      <td>4.213192</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Hoop Dreams (1994)</th>\n",
+       "      <td>4.212374</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Outlaw Josey Wales, The (1976)</th>\n",
+       "      <td>4.210192</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>Little Big Man (1970)</th>\n",
+       "      <td>4.206455</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "                                                     ratings\n",
+       "movies                                                      \n",
+       "Monty Python and the Holy Grail (1975)              4.404031\n",
+       "Bridge on the River Kwai, The (1957)                4.247121\n",
+       "Lawrence of Arabia (1962)                           4.239930\n",
+       "Good, the Bad and the Ugly, The (Buono, il brut...  4.231940\n",
+       "Glory (1989)                                        4.224970\n",
+       "Godfather, The (1972)                               4.220405\n",
+       "Rosemary's Baby (1968)                              4.213192\n",
+       "Hoop Dreams (1994)                                  4.212374\n",
+       "Outlaw Josey Wales, The (1976)                      4.210192\n",
+       "Little Big Man (1970)                               4.206455"
+      ]
+     },
+     "execution_count": 116,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "user_id = 24\n",
+    "pred_user_rating(user_id)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.7.3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 2
+}
